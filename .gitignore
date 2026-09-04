@@ -10,3 +10,9 @@ desktop.ini
 # Local tooling output
 .playwright-mcp/
 *.log
+
+# 열쇠(API key) — 절대 올라가면 안 됩니다
+# .env 와 .env.무엇이든 은 모두 막고, 값이 빈 견본 .env.example 만 올립니다
+.env
+.env.*
+!.env.example
