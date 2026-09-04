@@ -3,14 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>강사 배정 현황</title>
+<title>강사님 메일 이력</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500&display=swap">
 <style>
+  /* 색 · 글꼴 -------------------------------------------------------
+     어두운 남색 바탕에 흰 글씨, 제목은 세리프. 값은 HSL 조각으로 두고
+     쓸 때 hsl(var(--...))로 꺼내 씁니다. */
   :root {
-    --bg: #f6f7fb;
-    --card: #ffffff;
-    --line: #e6e8ef;
-    --ink: #2b3040;
-    --ink-soft: #6b7285;
+    --background: 201 100% 13%;
+    --foreground: 0 0% 100%;
+    --muted-foreground: 240 4% 66%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 4%;
+    --secondary: 0 0% 10%;
+    --muted: 0 0% 10%;
+    --accent: 0 0% 10%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+
+    /* 제목은 Instrument Serif, 한글은 명조 계열로 이어받습니다 */
+    --font-display: 'Instrument Serif', 'Nanum Myeongjo', '바탕', Batang, serif;
+    --font-body: 'Inter', 'Pretendard', 'Malgun Gothic', '맑은 고딕', system-ui, sans-serif;
+
+    /* 픽셀 캐릭터 색은 그대로 둡니다 */
     --skin: #f3cfae;
     --skin-dark: #dcb08c;
     --dot: #3a3f52;
@@ -20,141 +37,473 @@
 
   body {
     margin: 0;
-    padding: 28px 20px 56px;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: "Pretendard", "Malgun Gothic", "맑은 고딕", system-ui, sans-serif;
+    padding: 0 0 72px;
+    min-height: 100vh;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-body);
     font-size: 16px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
   }
 
-  .wrap { max-width: 1180px; margin: 0 auto; }
+  /* 배경 영상 ------------------------------------------------------
+     화면을 가득 채우고 계속 돌아갑니다. 위에 덧씌우는 막은 없고,
+     깊이는 영상이 알아서 냅니다. 글은 모두 이 위에 올라갑니다. */
+  .bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* 유리 효과 ------------------------------------------------------
+     ::before가 테두리만 남기는 얇은 빛줄기를 그립니다 */
+  .liquid-glass {
+    background: rgba(255, 255, 255, 0.01);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border: none;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.4px;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%,
+      rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
+      rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* 글이 담긴 칸은 모두 영상 위(z-index 10)에 놓입니다 */
+  .nav, .wrap { position: relative; z-index: 10; }
+
+  /* 위쪽 차림표 ----------------------------------------------------- */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 24px 32px;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: hsl(var(--foreground));
+    text-decoration: none;
+  }
+  .logo sup { font-size: 12px; }
+
+  .nav-links { display: none; gap: 32px; }
+  @media (min-width: 768px) { .nav-links { display: flex; } }
+
+  .nav-links a {
+    font-size: 14px;
+    color: hsl(var(--muted-foreground));
+    text-decoration: none;
+    transition: color .2s ease;
+  }
+  .nav-links a:hover,
+  .nav-links a.is-active { color: hsl(var(--foreground)); }
+
+  .nav-cta {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 10px 24px;
+    font-size: 14px;
+    color: hsl(var(--foreground));
+    text-decoration: none;
+    transition: transform .2s ease;
+  }
+  .nav-cta:hover { transform: scale(1.03); }
+
+  /* 제목 ------------------------------------------------------------ */
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  .hero { text-align: center; padding: 72px 0 56px; }
 
   .notice {
     font-size: 13px;
-    color: var(--ink-soft);
-    margin: 0 0 14px;
+    color: hsl(var(--muted-foreground));
+    margin: 0 0 22px;
   }
 
   h1 {
-    font-size: 24px;
-    letter-spacing: -0.01em;
-    margin: 0 0 6px;
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(44px, 7.4vw, 86px);
+    line-height: 0.95;
+    letter-spacing: -2.46px;
+    margin: 0;
   }
-
-  .summary {
-    margin: 0 0 10px;
-    padding: 10px 14px;
-    background: #fff5e3;
-    border: 1px solid #f5d79a;
-    border-radius: 10px;
-    font-size: 15px;
-    color: #7a4a00;
-  }
-  .summary b { font-weight: 700; }
+  /* 뒷말은 옅은 색으로 두어 앞말이 먼저 읽히게 합니다 */
+  h1 em { font-style: normal; color: hsl(var(--muted-foreground)); }
 
   .sub {
-    margin: 0 0 26px;
-    font-size: 14px;
-    color: var(--ink-soft);
+    max-width: 42rem;
+    margin: 26px auto 0;
+    font-size: 17px;
+    line-height: 1.7;
+    color: hsl(var(--muted-foreground));
   }
 
-  .grid {
+  /* 두 칸 짜기: 왼쪽 목록 · 오른쪽 메일 --------------------------- */
+  .layout {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+    padding-bottom: 40px;
   }
 
-  /* 화면이 좁으면 한 줄에 한 개 */
-  @media (max-width: 720px) {
-    .grid { grid-template-columns: 1fr; }
+  /* 화면이 좁으면 목록이 위로 올라가고 메일이 아래에 놓입니다 */
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
   }
 
-  .card {
-    display: flex;
-    gap: 16px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 18px;
-    box-shadow: 0 1px 2px rgba(43, 48, 64, .04);
+  /* 영상이 밝은 자리에서도 글이 읽히도록 유리를 조금 더 두껍게 잡습니다.
+     화면 전체에 덧씌우는 막은 쓰지 않고, 이 칸 안에서만 흐립니다. */
+  .panel {
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.075);
+    backdrop-filter: blur(24px) saturate(1.1);
+    -webkit-backdrop-filter: blur(24px) saturate(1.1);
+  }
+
+  .panel-head {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    font-size: 13px;
+    color: hsl(var(--muted-foreground));
   }
 
   /* 픽셀 아바타 --------------------------------------------------- */
-  /* 색은 --hair / --shirt 두 개만 카드마다 바꿉니다.
+  /* 도안은 하나입니다. 사람마다 --hair / --shirt 두 값만 바꿉니다.
      <use>는 shadow tree라 CSS 선택자가 안 닿으므로,
      도형에 fill="var(--hair)"를 직접 붙여 상속으로 칠합니다. */
   .avatar {
     flex: 0 0 auto;
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
-    background: #eef1f8;
-    padding: 4px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.10);
+    padding: 3px;
     shape-rendering: crispEdges;
   }
+  .avatar.sm { width: 34px; height: 34px; border-radius: 9px; padding: 2px; }
+  .avatar.lg { width: 52px; height: 52px; border-radius: 12px; padding: 4px; }
 
-  /* 카드 본문 ----------------------------------------------------- */
-  .body { min-width: 0; flex: 1; }
+  /* 왼쪽: 강사님 목록 --------------------------------------------- */
+  .people { list-style: none; margin: 0; padding: 8px; }
 
-  .name {
-    font-size: 18px;
-    font-weight: 700;
-    margin: 0 0 10px;
-    letter-spacing: -0.01em;
-  }
-
-  .row {
+  /* 한 줄에 아바타 + 성함 + 상태. 중간에 줄이 바뀌지 않게 합니다 */
+  .person {
     display: flex;
-    gap: 8px;
-    font-size: 15px;
-    margin-bottom: 4px;
-  }
-
-  .label {
-    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
     white-space: nowrap;
-    color: var(--ink-soft);
-    font-size: 14px;
-    min-width: 62px;
+    overflow: hidden;
+  }
+  .person + .person { margin-top: 2px; }
+  .person:hover { background: rgba(255, 255, 255, 0.07); }
+  .person:focus-visible { outline: 2px solid rgba(255, 255, 255, .55); outline-offset: -2px; }
+  .person[aria-selected="true"] {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.22);
   }
 
-  .value { min-width: 0; word-break: keep-all; }
+  .p-name {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 500;
+    color: hsl(var(--foreground));
+  }
+
+  /* 오른쪽: 고른 강사님 머리글 ------------------------------------ */
+  .thread-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  }
+
+  .th-text {
+    min-width: 0;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .th-name {
+    font-family: var(--font-display);
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+  .th-meta { font-size: 14px; color: hsl(var(--muted-foreground)); }
+
+  /* 오른쪽: 메일 말풍선 ------------------------------------------- */
+  .thread { padding: 20px 16px 6px; }
+
+  .msg { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 16px; }
+  .msg.mine { justify-content: flex-end; }
+
+  .msg-col { min-width: 0; max-width: 78%; }
+
+  .msg-meta {
+    margin: 0 0 5px;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+  }
+  .msg.mine .msg-meta { text-align: right; }
+
+  .bubble {
+    border-radius: 16px;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.075);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  /* 내가 보낸 것은 한 칸 밝게 해서 눈으로 바로 갈립니다 */
+  .msg.mine .bubble {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.20);
+  }
+
+  .b-subject {
+    margin: 0 0 7px;
+    font-size: 13px;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+  }
+  .b-line { margin: 0; font-size: 15px; word-break: keep-all; }
+  .b-line + .b-line { margin-top: 2px; }
+
+  /* 답장 초안 ------------------------------------------------------ */
+  .draft {
+    margin: 0 16px 18px;
+    border-radius: 16px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .draft-tag {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+  }
+  .draft .b-line { line-height: 1.55; }
+
+  .actions { padding: 0 16px 22px; text-align: center; }
+
+  /* 이 화면에서 실제로 누르는 버튼은 이것 하나뿐이라,
+     밝은 장면 위에서도 글자가 묻히지 않게 유리를 조금 더 채웁니다 */
+  .draft-btn {
+    font: inherit;
+    font-size: 16px;
+    border-radius: 999px;
+    padding: 18px 52px;
+    color: hsl(var(--foreground));
+    cursor: pointer;
+    background: hsl(var(--background) / .42);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .draft-btn:hover { background: hsl(var(--background) / .55); }
+
+  .empty {
+    padding: 72px 16px;
+    text-align: center;
+    color: hsl(var(--muted-foreground));
+    font-size: 15px;
+  }
 
   /* 상태 배지 ----------------------------------------------------- */
   .status {
     display: inline-block;
-    margin-top: 12px;
-    padding: 5px 12px;
+    padding: 3px 11px;
     border-radius: 999px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 500;
     border: 1px solid transparent;
   }
+  /* 어두운 바탕에 맞춰 옅게 깔았을 뿐, 뜻하는 색은 그대로입니다 */
   /* 기다리는 상태 = 눈에 띄는 주황 */
-  .st-wait    { background: #fff2d9; color: #9a5b00; border-color: #f5d79a; }
+  .st-wait    { background: rgba(245, 170, 60, .16);  color: #f6ce97; border-color: rgba(245, 170, 60, .38); }
   /* 조율 중 = 파랑 */
-  .st-adjust  { background: #e4eeff; color: #2a53a5; border-color: #c3d7fb; }
+  .st-adjust  { background: rgba(120, 170, 255, .16); color: #c2d8fb; border-color: rgba(120, 170, 255, .38); }
   /* 확정 = 초록 */
-  .st-done    { background: #e3f5ea; color: #1f6b45; border-color: #bee6cf; }
+  .st-done    { background: rgba(80, 210, 150, .15);  color: #b6e6cd; border-color: rgba(80, 210, 150, .36); }
   /* 종료 = 회색 */
-  .st-closed  { background: #eef0f4; color: #6b7285; border-color: #dfe2ea; }
+  .st-closed  { background: rgba(255, 255, 255, .08); color: hsl(var(--muted-foreground)); border-color: rgba(255, 255, 255, .18); }
 
   .st-wait::before { content: "● "; }
+
+  /* 움직임 ---------------------------------------------------------
+     --i 는 "몇 번째"라는 뜻이고, 그만큼 늦게 움직이게 해서
+     열두 명이 한꺼번에 말고 차례로 움직이도록 합니다. */
+
+  /* 처음 들어올 때 아래에서 떠오릅니다 */
+  @keyframes fade-rise {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-rise         { animation: fade-rise .8s ease-out both; }
+  .animate-fade-rise-delay   { animation: fade-rise .8s ease-out .2s both; }
+  .animate-fade-rise-delay-2 { animation: fade-rise .8s ease-out .4s both; }
+
+  /* 픽셀 캐릭터가 숨 쉬듯 위아래로 조금씩 */
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+  .avatar {
+    animation: bob 3.2s ease-in-out infinite;
+    animation-delay: calc(var(--i, 0) * .17s);
+  }
+
+  /* 줄에 마우스를 올리면 그 사람만 폴짝 */
+  @keyframes hop {
+    0%   { transform: translateY(0)    rotate(0); }
+    35%  { transform: translateY(-7px) rotate(-6deg); }
+    70%  { transform: translateY(0)    rotate(3deg); }
+    100% { transform: translateY(0)    rotate(0); }
+  }
+  .person { transition: background .15s ease, border-color .15s ease, transform .15s ease; }
+  .person:hover { transform: translateX(3px); }
+  .person:active { transform: translateX(3px) scale(.985); }
+  .person:hover .avatar,
+  .person:focus-visible .avatar { animation: hop .55s ease-in-out; }
+
+  /* 고른 강사님 머리글: 아바타가 한 번 튀어나온 뒤 다시 숨을 쉽니다 */
+  @keyframes pop {
+    0%   { opacity: 0; transform: scale(.5) rotate(-10deg); }
+    60%  { opacity: 1; transform: scale(1.12) rotate(4deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0); }
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .thread-head .avatar {
+    animation: pop .45s cubic-bezier(.2, .9, .3, 1.35) both,
+               bob 3.2s ease-in-out .45s infinite;
+  }
+  .thread-head .th-text,
+  .thread-head .status { animation: fade-in .45s .08s both; }
+
+  /* 말풍선이 각자 제 쪽에서 하나씩 날아옵니다 */
+  @keyframes in-left {
+    from { opacity: 0; transform: translate(-16px, 10px) scale(.96); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes in-right {
+    from { opacity: 0; transform: translate(16px, 10px) scale(.96); }
+    to   { opacity: 1; transform: none; }
+  }
+  .msg {
+    animation: in-left .4s cubic-bezier(.2, .8, .3, 1) both;
+    animation-delay: calc(var(--i, 0) * .11s);
+  }
+  .msg.mine { animation-name: in-right; }
+
+  /* 말풍선에 마우스를 올리면 살짝 떠오릅니다 */
+  .bubble { transition: transform .18s ease, background .18s ease; }
+  .msg:hover .bubble { transform: translateY(-2px); background: rgba(255, 255, 255, 0.10); }
+  .msg.mine:hover .bubble { background: rgba(255, 255, 255, 0.17); }
+
+  /* 기다리는 상태의 동그라미가 깜빡입니다 */
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
+  .st-wait::before { animation: blink 1.5s ease-in-out infinite; }
+
+  /* 버튼 */
+  .draft-btn { transition: transform .2s ease; }
+  .draft-btn:hover { transform: scale(1.03); }
+  .draft-btn:active { transform: scale(.98); }
+  .draft-btn:focus-visible { outline: 2px solid rgba(255, 255, 255, .6); outline-offset: 3px; }
+  .draft-btn.busy { pointer-events: none; }
+
+  /* 초안을 쓰는 동안 점 세 개가 차례로 뜁니다 */
+  @keyframes dot {
+    0%, 75%, 100% { transform: translateY(0); opacity: .35; }
+    35%           { transform: translateY(-6px); opacity: 1; }
+  }
+  .typing { display: flex; gap: 6px; padding: 4px 0 2px; }
+  .typing i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: hsl(var(--foreground));
+    animation: dot 1s ease-in-out infinite;
+  }
+  .typing i:nth-child(2) { animation-delay: .15s; }
+  .typing i:nth-child(3) { animation-delay: .30s; }
+
+  /* 초안 상자는 아래에서 올라오고, 글은 한 줄씩 나타납니다 */
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .draft { animation: rise .35s cubic-bezier(.2, .8, .3, 1) both; }
+  .draft .b-line {
+    animation: fade-in .3s both;
+    animation-delay: calc(var(--i, 0) * .07s);
+  }
+
+  /* 움직임을 꺼 둔 분에게는 움직이지 않습니다 */
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
+
+<!-- 배경 영상: 소리 없이 계속 돌아갑니다 -->
+<video class="bg-video" autoplay loop muted playsinline
+       src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4"></video>
+
+<!-- 위쪽 차림표 -->
+<nav class="nav animate-fade-rise">
+  <a class="logo" href="#">Velorah<sup>®</sup></a>
+
+  <div class="nav-links">
+    <a href="#" class="is-active">Home</a>
+    <a href="#">Studio</a>
+    <a href="#">About</a>
+    <a href="#">Journal</a>
+    <a href="#">Reach Us</a>
+  </div>
+
+  <!-- 눌러서 하는 일은 없는 자리 표시라 버튼이 아니라 링크로 두었습니다.
+       화면에서 실제로 누르는 버튼은 '답장 초안 만들기' 하나뿐입니다. -->
+  <a class="nav-cta liquid-glass" href="#">Begin Journey</a>
+</nav>
+
 <div class="wrap">
 
-  <p class="notice">예시 자료로 만든 연습 화면입니다</p>
-
-  <h1>강사 배정 현황</h1>
-
-  <!-- 숫자는 02_instructors.csv를 센 값입니다 (전체 12행 / '대기'·'조율' 포함 6행) -->
-  <p class="summary">전체 <b>12분</b> 중 <b>6분</b>이 회신 대기 또는 일정 조율 중입니다.</p>
-
-  <p class="sub">전체 12분 · 회신을 기다리는 분은 주황색으로 표시됩니다</p>
+  <div class="hero">
+    <p class="notice animate-fade-rise">예시 자료로 만든 연습 화면입니다</p>
+    <h1 class="animate-fade-rise">강사님 <em>메일 이력</em></h1>
+    <p class="sub animate-fade-rise-delay">왼쪽에서 강사님을 고르면 그분과 주고받은 메일이 오른쪽에 말풍선으로 쌓입니다. 맨 아래 버튼을 누르면 답장 초안까지 한 번에 뜹니다.</p>
+  </div>
 
   <!-- 픽셀 캐릭터 도안 ----------------------------------------------
        몸통 1개 + 머리 2종(짧은머리/긴머리) + 표정 5종을 겹쳐 씁니다.
@@ -230,141 +579,414 @@
     </symbol>
   </svg>
 
-  <div class="grid">
+  <div class="layout">
 
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#8a5a3b; --shirt:#e2a3a8"><use href="#p-body"/><use href="#hair-long"/><use href="#f-smile"/></svg>
-      <div class="body">
-        <p class="name">최유라</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M4 기획자를 위한 금융데이터 활용 실무</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 5일 (토) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-wait">강의안 회신 대기</span>
-      </div>
+    <!-- 왼쪽: 강사님 목록. 자바스크립트가 열두 줄을 채웁니다 -->
+    <div class="panel liquid-glass animate-fade-rise-delay-2">
+      <div class="panel-head">강사님 12분</div>
+      <ul class="people" id="people" role="listbox" aria-label="강사님 목록"></ul>
     </div>
 
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#2f2b2b; --shirt:#7fa7d8"><use href="#p-body"/><use href="#hair-short"/><use href="#f-calm"/></svg>
-      <div class="body">
-        <p class="name">김도현</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M1 데이터 리터러시 기초</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 3일 (목) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-done">확정</span>
-      </div>
-    </div>
+    <!-- 오른쪽: 고른 강사님과 주고받은 메일 -->
+    <div class="panel liquid-glass animate-fade-rise-delay-2">
+      <p class="empty" id="empty">왼쪽에서 강사님을 골라 주세요</p>
 
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#5c4033; --shirt:#8fc9ae"><use href="#p-body"/><use href="#hair-long"/><use href="#f-happy"/></svg>
-      <div class="body">
-        <p class="name">박서연</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M2 금융 데이터 다루기</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 4일 (금) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-done">확정</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#3d3730; --shirt:#c2a5dd"><use href="#p-body"/><use href="#hair-short"/><use href="#f-smile"/></svg>
-      <div class="body">
-        <p class="name">이준호</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M3 리스크 데이터 이해</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 11일 (목) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">강남 교육장</span></div>
-        <span class="status st-adjust">일정 조율 중</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#a8623c; --shirt:#f0c38b"><use href="#p-body"/><use href="#hair-long"/><use href="#f-wink"/></svg>
-      <div class="body">
-        <p class="name">정민아</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M5 데이터 기반 서비스 기획</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 12일 (금) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-done">확정</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#4b4237; --shirt:#7ec4c8"><use href="#p-body"/><use href="#hair-short"/><use href="#f-calm"/></svg>
-      <div class="body">
-        <p class="name">한지훈</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M6 금융 규제와 데이터</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 19일 (토) 09:30~16:30</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">온라인</span></div>
-        <span class="status st-wait">섭외 회신 대기</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#6b4f2a; --shirt:#9ab8e8"><use href="#p-body"/><use href="#hair-long"/><use href="#f-smile"/></svg>
-      <div class="body">
-        <p class="name">오세영</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M7 대시보드로 보고하기</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">9월 25일 (목) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-done">확정</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#2b2f3a; --shirt:#e8a9c4"><use href="#p-body"/><use href="#hair-long"/><use href="#f-happy"/></svg>
-      <div class="body">
-        <p class="name">배수민</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M8 AI로 문서 자동화</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">10월 2일 (목) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">강남 교육장</span></div>
-        <span class="status st-wait">강의안 회신 대기</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#7a4a2f; --shirt:#a8c98d"><use href="#p-body"/><use href="#hair-short"/><use href="#f-oh"/></svg>
-      <div class="body">
-        <p class="name">문태경</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M9 데이터 시각화 실무</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">10월 10일 (금) 13:00~18:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">온라인</span></div>
-        <span class="status st-adjust">일정 조율 중</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#c08552; --shirt:#8ec5e0"><use href="#p-body"/><use href="#hair-long"/><use href="#f-smile"/></svg>
-      <div class="body">
-        <p class="name">류해린</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M10 고객 데이터 분석</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">10월 17일 (금) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-done">확정</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#33302c; --shirt:#d8b06a"><use href="#p-body"/><use href="#hair-short"/><use href="#f-calm"/></svg>
-      <div class="body">
-        <p class="name">신도윤</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M11 실습 프로젝트 코칭</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">10월 24일 (금) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">마포 교육장</span></div>
-        <span class="status st-wait">섭외 회신 대기</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <svg class="avatar" viewBox="0 0 16 16" style="--hair:#8d6b4f; --shirt:#b0b6c4"><use href="#p-body"/><use href="#hair-long"/><use href="#f-wink"/></svg>
-      <div class="body">
-        <p class="name">장예은</p>
-        <div class="row"><span class="label">담당모듈</span><span class="value">M12 성과 측정과 리포팅</span></div>
-        <div class="row"><span class="label">일정</span><span class="value">10월 31일 (금) 10:00~17:00</span></div>
-        <div class="row"><span class="label">장소</span><span class="value">강남 교육장</span></div>
-        <span class="status st-closed">종료</span>
+      <div id="threadWrap" hidden>
+        <div class="thread-head" id="threadHead"></div>
+        <div class="thread" id="thread"></div>
+        <div id="draftBox"></div>
+        <div class="actions">
+          <button class="draft-btn liquid-glass" id="draftBtn" type="button">답장 초안 만들기</button>
+        </div>
       </div>
     </div>
 
   </div>
 </div>
+
+<!-- 메일 이력 자료 ------------------------------------------------------
+     강사님 열두 분과 주고받은 메일 이력입니다. 전부 지어낸 연습용 예시이고,
+     실제 사람이나 회사와는 아무 관계가 없습니다.
+
+     아직 화면에 그리지는 않습니다. 자료만 먼저 넣어 둡니다.
+
+     생김새
+       키   = 강사님 성함 (02_instructors.csv의 '성함'과 같습니다)
+       from = "나"(교육운영 담당자) 또는 "강사님"
+       date = 보낸 날짜. 배열에 담긴 순서가 곧 시간 순서입니다.
+       subject = 메일 제목 한 줄
+       lines   = 본문. 한 줄이 배열의 한 칸이고, 두세 줄입니다.
+
+     열두 분 모두 마지막 메일은 강사님이 보낸 것이고,
+     담당자의 답장을 기다리는 상태로 끝납니다. -->
+<script>
+const THREADS = {
+
+  "최유라": [
+    { from: "나", date: "8월 12일", subject: "[데이터 실무 과정] M4 모듈 강의 요청드립니다",
+      lines: ["안녕하세요, 교육운영 담당자입니다.",
+              "9월 5일 토요일에 M4 기획자를 위한 금융데이터 활용 실무 모듈을 맡아 주실 수 있을지 여쭙습니다.",
+              "마포 교육장에서 10시부터 17시까지, 6시수로 계획하고 있습니다."] },
+    { from: "강사님", date: "8월 13일", subject: "RE: [데이터 실무 과정] M4 모듈 강의 요청드립니다",
+      lines: ["안녕하세요, 연락 주셔서 감사합니다.",
+              "9월 5일 일정 가능합니다. 진행하겠습니다."] },
+    { from: "나", date: "8월 26일", subject: "[데이터 실무 과정] M4 강의안 마감 안내",
+      lines: ["교재 인쇄 일정이 있어 강의안은 8월 29일 금요일까지 받고자 합니다.",
+              "초안 상태여도 괜찮으니 목차만이라도 먼저 보내 주시면 감사하겠습니다."] },
+    { from: "강사님", date: "8월 30일", subject: "RE: [데이터 실무 과정] M4 강의안 마감 안내",
+      lines: ["실습에 쓸 데이터를 정리하다 보니 예상보다 시간이 걸리고 있습니다.",
+              "9월 1일 월요일까지 이틀만 더 주실 수 있을까요?",
+              "그리고 실습용 샘플 데이터는 제가 준비하는 것이 맞는지도 확인 부탁드립니다."] }
+  ],
+
+  "김도현": [
+    { from: "나", date: "8월 8일", subject: "[데이터 실무 과정] M1 모듈 일정 확정 안내",
+      lines: ["9월 3일 목요일 10시부터 17시까지, 마포 교육장으로 확정되었습니다.",
+              "수강 인원은 24명이고 대부분 데이터를 처음 다루는 분들입니다."] },
+    { from: "강사님", date: "8월 9일", subject: "RE: [데이터 실무 과정] M1 모듈 일정 확정 안내",
+      lines: ["확인했습니다. 일정 잘 받았습니다.",
+              "교재는 몇 부 준비해 주시는지, 인쇄는 흑백인지 알려 주시면 그에 맞춰 만들겠습니다."] },
+    { from: "나", date: "8월 20일", subject: "RE: [데이터 실무 과정] M1 모듈 일정 확정 안내",
+      lines: ["교재는 26부를 컬러로 준비하겠습니다.",
+              "강의장에는 빔프로젝터와 무선 마이크가 있고, 노트북은 HDMI로 연결됩니다."] },
+    { from: "강사님", date: "9월 1일", subject: "마포 교육장 주차 문의드립니다",
+      lines: ["당일 장비가 있어 차를 가져가려 합니다.",
+              "마포 교육장에 강사 주차가 되는지, 등록이 필요하면 차량 번호를 언제까지 보내면 될까요?"] }
+  ],
+
+  "박서연": [
+    { from: "나", date: "8월 10일", subject: "[데이터 실무 과정] M2 모듈 일정 확정 안내",
+      lines: ["9월 4일 금요일 10시부터 17시까지, 마포 교육장으로 확정되었습니다.",
+              "M1을 들은 분들이 그대로 이어서 듣는 자리라 난이도는 조금 높여 주셔도 좋습니다."] },
+    { from: "나", date: "8월 27일", subject: "[데이터 실무 과정] M2 강의안 마감 안내",
+      lines: ["강의안은 8월 29일 금요일까지 부탁드립니다.",
+              "실습이 있으시면 필요한 프로그램도 함께 알려 주세요. 미리 설치해 두겠습니다."] },
+    { from: "강사님", date: "9월 2일", subject: "RE: [데이터 실무 과정] M2 강의안 마감 안내",
+      lines: ["강의안은 어제 보내 드렸습니다. 확인 부탁드립니다.",
+              "실습 파일을 수강생분들께 하루 전에 미리 나눠 드릴 수 있을까요?",
+              "당일 내려받는 데 시간을 쓰지 않으면 좋겠습니다."] }
+  ],
+
+  "이준호": [
+    { from: "나", date: "8월 14일", subject: "[데이터 실무 과정] M3 모듈 강의 요청드립니다",
+      lines: ["9월 11일에 M3 리스크 데이터 이해 모듈을 맡아 주실 수 있을지 여쭙습니다.",
+              "강남 교육장에서 진행하며 7시수로 잡고 있습니다."] },
+    { from: "강사님", date: "8월 17일", subject: "RE: [데이터 실무 과정] M3 모듈 강의 요청드립니다",
+      lines: ["제안 감사합니다. 다만 그 주에는 출장이 잡혀 있어 어렵습니다.",
+              "다른 날로 옮길 수 있다면 진행하고 싶습니다."] },
+    { from: "나", date: "8월 22일", subject: "RE: M3 모듈 일정 조정 건",
+      lines: ["일정 조정 가능합니다. 9월 18일, 9월 25일, 10월 2일 중에서는 어떠신지요?",
+              "장소와 시간은 그대로 강남 교육장 10시부터입니다."] },
+    { from: "강사님", date: "8월 28일", subject: "RE: M3 모듈 일정 조정 건",
+      lines: ["9월 18일이나 9월 25일 모두 괜찮습니다. 편하신 날로 정해 주세요.",
+              "그리고 7시수면 점심시간을 빼고 계산한 것이 맞는지 확인 부탁드립니다."] }
+  ],
+
+  "정민아": [
+    { from: "나", date: "8월 18일", subject: "[데이터 실무 과정] M5 모듈 일정 확정 안내",
+      lines: ["9월 12일 금요일 10시부터 17시까지, 마포 교육장으로 확정되었습니다.",
+              "기획 직군이 절반 정도라 사례 위주로 부탁드립니다."] },
+    { from: "강사님", date: "8월 19일", subject: "RE: [데이터 실무 과정] M5 모듈 일정 확정 안내",
+      lines: ["확인했습니다. 사례 중심으로 구성해 보겠습니다.",
+              "지난 기수에 쓰신 사례집이 있으면 참고하게 보내 주셔도 좋겠습니다."] },
+    { from: "나", date: "8월 29일", subject: "[데이터 실무 과정] M5 강의안 마감 안내",
+      lines: ["강의안은 9월 5일 금요일까지 부탁드립니다.",
+              "조별 실습이 있으면 미리 알려 주시면 자리를 그렇게 배치하겠습니다."] },
+    { from: "강사님", date: "9월 2일", subject: "RE: [데이터 실무 과정] M5 강의안 마감 안내",
+      lines: ["강의안은 마감일에 맞춰 보내 드리겠습니다.",
+              "조별 실습을 넣으려는데 한 조를 네 명씩 잡으면 몇 조가 되는지 알려 주세요.",
+              "조별로 쓸 화이트보드나 큰 종이도 준비가 될까요?"] }
+  ],
+
+  "한지훈": [
+    { from: "나", date: "8월 20일", subject: "[데이터 실무 과정] M6 모듈 강의 요청드립니다",
+      lines: ["9월 19일 토요일에 M6 금융 규제와 데이터 모듈을 요청드리고자 연락드립니다.",
+              "온라인으로 진행하며 9시 30분부터 16시 30분까지입니다."] },
+    { from: "강사님", date: "8월 21일", subject: "RE: [데이터 실무 과정] M6 모듈 강의 요청드립니다",
+      lines: ["관심 있습니다. 다만 조건을 먼저 확인하고 싶습니다.",
+              "시수와 시간당 강사료가 어떻게 되는지 알려 주시겠습니까?"] },
+    { from: "나", date: "8월 25일", subject: "RE: [데이터 실무 과정] M6 모듈 강의 요청드립니다",
+      lines: ["6시수 기준이며 시간당 11만 원으로 책정되어 있습니다.",
+              "온라인 진행이라 교통비는 따로 없고, 자료 제작비가 별도로 있습니다."] },
+    { from: "강사님", date: "8월 31일", subject: "RE: [데이터 실무 과정] M6 모듈 강의 요청드립니다",
+      lines: ["조건은 알겠습니다. 토요일이라 오전에 개인 일정이 있는데,",
+              "시작을 10시로 30분만 늦출 수 있을지 여쭙습니다.",
+              "그리고 온라인은 어떤 프로그램으로 진행하시는지도 알려 주세요."] }
+  ],
+
+  "오세영": [
+    { from: "나", date: "8월 13일", subject: "[데이터 실무 과정] M7 모듈 일정 확정 안내",
+      lines: ["9월 25일 목요일 10시부터 17시까지, 마포 교육장으로 확정되었습니다.",
+              "대시보드 실습이 있어 노트북은 각자 가져오는 것으로 안내했습니다."] },
+    { from: "나", date: "9월 1일", subject: "[데이터 실무 과정] M7 강의안 마감 안내",
+      lines: ["강의안은 9월 18일 목요일까지 부탁드립니다.",
+              "필요한 프로그램이 있으면 함께 알려 주세요."] },
+    { from: "강사님", date: "9월 3일", subject: "RE: [데이터 실무 과정] M7 강의안 마감 안내",
+      lines: ["강의안은 일정에 맞춰 준비하겠습니다.",
+              "실습에 쓸 계정을 수강생 수만큼 미리 만들어 두어야 하는데, 이건 제가 준비할까요?",
+              "교육장 인터넷이 스물몇 명이 한꺼번에 접속해도 괜찮은지도 확인 부탁드립니다."] }
+  ],
+
+  "배수민": [
+    { from: "나", date: "8월 26일", subject: "[데이터 실무 과정] M8 모듈 일정 확정 안내",
+      lines: ["10월 2일 목요일 10시부터 17시까지, 강남 교육장으로 확정되었습니다.",
+              "문서 자동화를 처음 접하는 분들이 대부분입니다."] },
+    { from: "강사님", date: "8월 27일", subject: "RE: [데이터 실무 과정] M8 모듈 일정 확정 안내",
+      lines: ["확인했습니다. 실습 비중을 절반 정도로 잡아 보겠습니다.",
+              "강남 교육장은 처음이라 층과 강의실 번호를 나중에 알려 주시면 좋겠습니다."] },
+    { from: "나", date: "9월 1일", subject: "[데이터 실무 과정] M8 강의안 마감 안내",
+      lines: ["강의안은 9월 18일 목요일까지 부탁드립니다.",
+              "실습에 쓰실 도구가 정해지면 미리 알려 주세요."] },
+    { from: "강사님", date: "9월 3일", subject: "RE: [데이터 실무 과정] M8 강의안 마감 안내",
+      lines: ["실습에 쓸 도구가 계정을 따로 만들어야 하는 종류입니다.",
+              "회사에서 가입이 막혀 있지는 않은지, 미리 확인해 주실 수 있을까요?",
+              "막혀 있다면 다른 도구로 바꿔서 준비하겠습니다."] }
+  ],
+
+  "문태경": [
+    { from: "나", date: "8월 24일", subject: "[데이터 실무 과정] M9 모듈 강의 요청드립니다",
+      lines: ["10월 10일 금요일 오후에 M9 데이터 시각화 실무 모듈을 요청드립니다.",
+              "온라인으로 13시부터 18시까지, 5시수입니다."] },
+    { from: "강사님", date: "8월 26일", subject: "RE: [데이터 실무 과정] M9 모듈 강의 요청드립니다",
+      lines: ["오후 시간은 가능합니다.",
+              "다만 다섯 시간을 이어서 하면 집중이 어려우니 쉬는 시간을 어떻게 넣을지 상의하고 싶습니다."] },
+    { from: "나", date: "9월 1일", subject: "RE: [데이터 실무 과정] M9 모듈 진행 방식",
+      lines: ["50분 강의 뒤 10분 휴식으로 잡고, 중간에 20분 길게 쉬는 것으로 안내하겠습니다.",
+              "괜찮으시면 이대로 시간표를 만들어 두겠습니다."] },
+    { from: "강사님", date: "9월 3일", subject: "RE: [데이터 실무 과정] M9 모듈 진행 방식",
+      lines: ["시간표는 그렇게 해 주시면 좋겠습니다.",
+              "그런데 10월 10일에 다른 일정이 생길 것 같아 10월 17일로 옮길 수 있을지 여쭙습니다.",
+              "어려우면 원래 날짜로 진행하겠습니다."] }
+  ],
+
+  "류해린": [
+    { from: "나", date: "8월 19일", subject: "[데이터 실무 과정] M10 모듈 일정 확정 안내",
+      lines: ["10월 17일 금요일 10시부터 17시까지, 마포 교육장으로 확정되었습니다.",
+              "고객 데이터를 다루는 실무자 위주로 모집되었습니다."] },
+    { from: "나", date: "9월 2일", subject: "[데이터 실무 과정] M10 강의안 마감 안내",
+      lines: ["강의안은 9월 26일 금요일까지 부탁드립니다.",
+              "교재 인쇄가 그다음 주에 들어갑니다."] },
+    { from: "강사님", date: "9월 3일", subject: "마포 교육장 오는 길 문의드립니다",
+      lines: ["강의안은 일정에 맞춰 보내 드리겠습니다.",
+              "당일 아침에 짐이 많아 차를 가져갈까 하는데 주차 지원이 되는지 궁금합니다.",
+              "지원이 어려우면 지하철로 가겠습니다. 가까운 역도 알려 주시면 좋겠습니다."] }
+  ],
+
+  "신도윤": [
+    { from: "나", date: "8월 28일", subject: "[데이터 실무 과정] M11 실습 코칭 요청드립니다",
+      lines: ["10월 24일 금요일에 M11 실습 프로젝트 코칭을 맡아 주실 수 있을지 여쭙습니다.",
+              "마포 교육장에서 10시부터 17시까지, 6시수입니다."] },
+    { from: "강사님", date: "8월 29일", subject: "RE: [데이터 실무 과정] M11 실습 코칭 요청드립니다",
+      lines: ["그날 일정은 비어 있습니다.",
+              "다만 코칭이라 하셨는데 강의처럼 앞에서 진행하는 것인지, 조별로 돌며 봐드리는 것인지 궁금합니다."] },
+    { from: "나", date: "9월 2일", subject: "RE: [데이터 실무 과정] M11 실습 코칭 요청드립니다",
+      lines: ["오전에는 짧게 안내를 해 주시고, 오후에는 조별로 돌며 봐 주시는 방식입니다.",
+              "수강생은 24명, 6개 조로 나눌 예정입니다."] },
+    { from: "강사님", date: "9월 3일", subject: "RE: [데이터 실무 과정] M11 실습 코칭 요청드립니다",
+      lines: ["방식은 이해했습니다. 그렇게 진행하면 될 것 같습니다.",
+              "조별 결과물을 미리 받아 보고 가야 할 텐데, 그 검토 시간도 시수에 들어가는지 확인 부탁드립니다.",
+              "포함되지 않는다면 당일 현장에서만 보고 코칭하겠습니다."] }
+  ],
+
+  "장예은": [
+    { from: "나", date: "8월 9일", subject: "[데이터 실무 과정] M12 모듈 강의 요청드립니다",
+      lines: ["10월 31일 금요일에 M12 성과 측정과 리포팅 모듈을 요청드립니다.",
+              "강남 교육장에서 10시부터 17시까지, 6시수입니다."] },
+    { from: "강사님", date: "8월 11일", subject: "RE: [데이터 실무 과정] M12 모듈 강의 요청드립니다",
+      lines: ["일정 가능합니다. 진행하겠습니다.",
+              "지난번과 비슷한 구성으로 준비해 보겠습니다."] },
+    { from: "나", date: "8월 30일", subject: "[데이터 실무 과정] M12 모듈 진행 관련 안내",
+      lines: ["죄송한 말씀을 드리게 되었습니다. 과정 구성이 바뀌면서 M12는 이번 기수에서 빠지게 되었습니다.",
+              "미리 시간을 비워 두셨을 텐데 늦게 알려 드려 죄송합니다.",
+              "다음 기수에는 꼭 다시 모시고 싶습니다."] },
+    { from: "강사님", date: "9월 1일", subject: "RE: [데이터 실무 과정] M12 모듈 진행 관련 안내",
+      lines: ["아쉽지만 사정은 이해했습니다. 다음 기수 일정이 정해지면 알려 주세요.",
+              "그동안 만들어 둔 자료가 절반쯤 있는데, 이건 그대로 두었다가 다음에 쓰면 될까요?",
+              "혹시 준비한 부분에 대한 정산 절차가 따로 있는지도 알려 주시면 감사하겠습니다."] }
+  ]
+
+};
+</script>
+
+<!-- 강사님 자료 --------------------------------------------------------
+     02_instructors.csv의 열두 줄을 그대로 옮겨 놓은 것입니다.
+     hair · shirt · hairStyle · face 네 값은 아바타 도안을 사람마다 다르게
+     칠하기 위한 것이고, 도안 자체는 위의 <symbol> 하나를 모두가 같이 씁니다. -->
+<script>
+const INSTRUCTORS = [
+  { name: "최유라", email: "yura.choi@example.com",     module: "M4 기획자를 위한 금융데이터 활용 실무", when: "9월 5일 (토) 10:00~17:00",  place: "마포 교육장", status: "강의안 회신 대기", hair: "#8a5a3b", shirt: "#e2a3a8", hairStyle: "hair-long",  face: "f-smile" },
+  { name: "김도현", email: "dohyun.kim@example.com",    module: "M1 데이터 리터러시 기초",              when: "9월 3일 (목) 10:00~17:00",  place: "마포 교육장", status: "확정",            hair: "#2f2b2b", shirt: "#7fa7d8", hairStyle: "hair-short", face: "f-calm"  },
+  { name: "박서연", email: "seoyeon.park@example.com",  module: "M2 금융 데이터 다루기",                when: "9월 4일 (금) 10:00~17:00",  place: "마포 교육장", status: "확정",            hair: "#5c4033", shirt: "#8fc9ae", hairStyle: "hair-long",  face: "f-happy" },
+  { name: "이준호", email: "junho.lee@example.com",     module: "M3 리스크 데이터 이해",                when: "9월 11일 (목) 10:00~17:00", place: "강남 교육장", status: "일정 조율 중",     hair: "#3d3730", shirt: "#c2a5dd", hairStyle: "hair-short", face: "f-smile" },
+  { name: "정민아", email: "mina.jung@example.com",     module: "M5 데이터 기반 서비스 기획",           when: "9월 12일 (금) 10:00~17:00", place: "마포 교육장", status: "확정",            hair: "#a8623c", shirt: "#f0c38b", hairStyle: "hair-long",  face: "f-wink"  },
+  { name: "한지훈", email: "jihoon.han@example.com",    module: "M6 금융 규제와 데이터",                when: "9월 19일 (토) 09:30~16:30", place: "온라인",      status: "섭외 회신 대기",   hair: "#4b4237", shirt: "#7ec4c8", hairStyle: "hair-short", face: "f-calm"  },
+  { name: "오세영", email: "seyoung.oh@example.com",    module: "M7 대시보드로 보고하기",               when: "9월 25일 (목) 10:00~17:00", place: "마포 교육장", status: "확정",            hair: "#6b4f2a", shirt: "#9ab8e8", hairStyle: "hair-long",  face: "f-smile" },
+  { name: "배수민", email: "sumin.bae@example.com",     module: "M8 AI로 문서 자동화",                  when: "10월 2일 (목) 10:00~17:00", place: "강남 교육장", status: "강의안 회신 대기", hair: "#2b2f3a", shirt: "#e8a9c4", hairStyle: "hair-long",  face: "f-happy" },
+  { name: "문태경", email: "taekyung.moon@example.com", module: "M9 데이터 시각화 실무",                when: "10월 10일 (금) 13:00~18:00", place: "온라인",     status: "일정 조율 중",     hair: "#7a4a2f", shirt: "#a8c98d", hairStyle: "hair-short", face: "f-oh"    },
+  { name: "류해린", email: "haerin.ryu@example.com",    module: "M10 고객 데이터 분석",                 when: "10월 17일 (금) 10:00~17:00", place: "마포 교육장", status: "확정",           hair: "#c08552", shirt: "#8ec5e0", hairStyle: "hair-long",  face: "f-smile" },
+  { name: "신도윤", email: "doyoon.shin@example.com",   module: "M11 실습 프로젝트 코칭",               when: "10월 24일 (금) 10:00~17:00", place: "마포 교육장", status: "섭외 회신 대기", hair: "#33302c", shirt: "#d8b06a", hairStyle: "hair-short", face: "f-calm"  },
+  { name: "장예은", email: "yeeun.jang@example.com",    module: "M12 성과 측정과 리포팅",               when: "10월 31일 (금) 10:00~17:00", place: "강남 교육장", status: "종료",           hair: "#8d6b4f", shirt: "#b0b6c4", hairStyle: "hair-long",  face: "f-wink"  }
+];
+
+/* 상태마다 배지 색을 정해 둡니다 */
+const STATUS_CLASS = {
+  "강의안 회신 대기": "st-wait",
+  "섭외 회신 대기":   "st-wait",
+  "일정 조율 중":     "st-adjust",
+  "확정":             "st-done",
+  "종료":             "st-closed"
+};
+
+/* 답장 초안에 쓸 문장입니다. 지금은 미리 넣어둔 예시 문장을 끼워 넣기만 합니다.
+   제목 한 조각과 본문 다섯째 줄만 상태에 따라 달라집니다. */
+const DRAFT_TEXT = {
+  "강의안 회신 대기": { subject: "강의안 관련 안내", body: "보내주시기로 한 강의안을 아직 받지 못하여 다시 안내드립니다." },
+  "섭외 회신 대기":   { subject: "강의 요청 관련 안내", body: "지난번 말씀드린 강의 요청에 대한 회신을 기다리고 있습니다." },
+  "일정 조율 중":     { subject: "일정 관련 안내",     body: "말씀 주신 날짜 가운데 하루로 일정을 확정하고자 다시 연락드립니다." },
+  "확정":             { subject: "진행 관련 안내",     body: "당일 준비물과 진행 방식을 미리 안내드립니다." },
+  "종료":             { subject: "마무리 안내",        body: "이번 기수는 마무리되었지만 다음 기수에 다시 모시고 싶어 연락드립니다." }
+};
+
+const $ = (id) => document.getElementById(id);
+let picked  = null;  /* 지금 고른 강사님. 아무도 안 골랐으면 null */
+let writing = null;  /* 초안을 쓰는 척하는 동안 재는 시간 */
+
+/* 글자를 그대로 화면에 넣기 위한 처리 */
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/* 아바타 하나를 그립니다. 도안은 하나, 색만 사람마다 다릅니다 */
+function avatar(p, size) {
+  return '<svg class="avatar ' + size + '" viewBox="0 0 16 16" aria-hidden="true"' +
+         ' style="--hair:' + p.hair + '; --shirt:' + p.shirt + '">' +
+         '<use href="#p-body"/><use href="#' + p.hairStyle + '"/><use href="#' + p.face + '"/></svg>';
+}
+
+function badge(status, extra) {
+  return '<span class="status ' + STATUS_CLASS[status] + (extra || '') + '">' + esc(status) + '</span>';
+}
+
+/* 왼쪽 목록: 한 줄에 아바타 + 성함 + 상태 */
+function drawList() {
+  $("people").innerHTML = INSTRUCTORS.map(function (p, i) {
+    return '<li class="person" role="option" tabindex="0" data-i="' + i + '" aria-selected="false"' +
+           ' style="--i:' + i + '">' +
+             avatar(p, "sm") +
+             '<span class="p-name">' + esc(p.name) + '</span>' +
+             badge(p.status) +
+           '</li>';
+  }).join("");
+}
+
+/* 오른쪽: 머리글 한 줄 + 오래된 메일부터 쌓은 말풍선 */
+function drawThread(p) {
+  $("threadHead").innerHTML =
+    avatar(p, "lg") +
+    '<span class="th-text">' +
+      '<span class="th-name">' + esc(p.name) + '</span>' +
+      '<span class="th-meta"> · ' + esc(p.module) + ' · ' + esc(p.when) + ' · ' + esc(p.place) + '</span>' +
+    '</span>' +
+    badge(p.status);
+
+  const mails = THREADS[p.name] || [];
+  $("thread").innerHTML = mails.map(function (m, i) {
+    const mine = (m.from === "나");
+    const who  = mine ? "나" : (p.name + " 강사님");
+    const bubble =
+      '<div class="msg-col">' +
+        '<p class="msg-meta">' + esc(who) + ' · ' + esc(m.date) + '</p>' +
+        '<div class="bubble">' +
+          '<p class="b-subject">' + esc(m.subject) + '</p>' +
+          m.lines.map(function (line) { return '<p class="b-line">' + esc(line) + '</p>'; }).join("") +
+        '</div>' +
+      '</div>';
+    /* 강사님 말풍선은 왼쪽에 아바타를 붙이고, 내 말풍선은 오른쪽에 둡니다.
+       --i 를 붙여 두면 위에서부터 차례로 하나씩 날아옵니다 */
+    return mine
+      ? '<div class="msg mine" style="--i:' + i + '">' + bubble + '</div>'
+      : '<div class="msg" style="--i:' + i + '">' + avatar(p, "sm") + bubble + '</div>';
+  }).join("");
+}
+
+/* 답장 초안: 머리말 2줄 + 본문 6줄, 모두 여덟 줄로 늘 같습니다 */
+function drawDraft(p) {
+  const code  = p.module.split(" ")[0];                       /* M4 같은 모듈 번호 */
+  const where = (p.place === "온라인") ? "온라인으로 진행하는" : (p.place + "에서 진행하는");
+  const day   = p.when.replace(/ \d{2}:\d{2}~\d{2}:\d{2}$/, "");   /* 시간을 뺀 날짜만 */
+  const t     = DRAFT_TEXT[p.status];
+
+  const lines = [
+    "받는 사람: " + p.name + " (" + p.email + ")",
+    "제목: [데이터 실무 과정] " + code + " " + t.subject,
+    "안녕하세요, " + p.name + " 강사님. 교육운영 담당자입니다.",
+    day + " " + where + " " + code + " 모듈 관련하여 안내드립니다.",
+    t.body,
+    "9월 10일까지 회신 주시면 감사하겠습니다.",
+    "일정이나 내용 조정이 필요하시면 편히 말씀해 주세요.",
+    "감사합니다."
+  ];
+
+  $("draftBox").innerHTML =
+    '<div class="draft liquid-glass">' +
+      '<p class="draft-tag">답장 초안 · 미리 넣어둔 예시 문장입니다</p>' +
+      lines.map(function (line, i) {
+        return '<p class="b-line" style="--i:' + i + '">' + esc(line) + '</p>';
+      }).join("") +
+    '</div>';
+}
+
+/* 강사님 한 분을 고릅니다. 초안은 지우고 처음 상태로 돌아갑니다 */
+function pick(i) {
+  picked = INSTRUCTORS[i];
+
+  Array.prototype.forEach.call($("people").children, function (li, n) {
+    li.setAttribute("aria-selected", n === i ? "true" : "false");
+  });
+
+  $("empty").hidden = true;
+  $("threadWrap").hidden = false;
+  clearTimeout(writing);
+  $("draftBtn").classList.remove("busy");
+  $("draftBox").innerHTML = "";
+  drawThread(picked);
+}
+
+drawList();
+
+$("people").addEventListener("click", function (e) {
+  const li = e.target.closest(".person");
+  if (li) pick(Number(li.dataset.i));
+});
+
+$("people").addEventListener("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const li = e.target.closest(".person");
+  if (!li) return;
+  e.preventDefault();
+  pick(Number(li.dataset.i));
+});
+
+/* 버튼은 하나뿐입니다. 다시 눌러도 초안 하나가 새로 바뀔 뿐 쌓이지 않습니다.
+   누르면 점 세 개가 잠깐 뛰다가 초안이 올라옵니다. 쓰는 척하는 것뿐이고,
+   나오는 문장은 미리 넣어둔 예시 그대로입니다. */
+$("draftBtn").addEventListener("click", function () {
+  if (!picked) return;
+  const who = picked;
+
+  clearTimeout(writing);
+  $("draftBtn").classList.add("busy");
+  $("draftBox").innerHTML =
+    '<div class="draft liquid-glass">' +
+      '<p class="draft-tag">답장 초안 · 쓰는 중입니다</p>' +
+      '<div class="typing"><i></i><i></i><i></i></div>' +
+    '</div>';
+
+  writing = setTimeout(function () {
+    $("draftBtn").classList.remove("busy");
+    if (picked === who) drawDraft(who);   /* 그 사이 다른 분을 골랐으면 그만둡니다 */
+  }, 700);
+});
+</script>
 </body>
 </html>
