@@ -315,6 +315,31 @@
   }
   .draft .b-line { line-height: 1.55; }
 
+  /* 초안을 담는 칸. 눌러서 그대로 복사해 갑니다 */
+  .draft-copy {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: hsl(var(--background) / .35);
+    color: hsl(var(--foreground));
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.7;
+    word-break: keep-all;
+  }
+  .draft-copy:focus { outline: 2px solid rgba(255, 255, 255, .5); outline-offset: 2px; }
+
+  /* 잘 안 됐을 때 한 줄 */
+  .draft-error {
+    margin: 0;
+    font-size: 14px;
+    color: #f6ce97;
+    word-break: keep-all;
+  }
+
   .actions { padding: 0 16px 22px; text-align: center; }
 
   /* 이 화면에서 실제로 누르는 버튼은 이것 하나뿐이라,
@@ -837,19 +862,8 @@ const STATUS_CLASS = {
   "종료":             "st-closed"
 };
 
-/* 답장 초안에 쓸 문장입니다. 지금은 미리 넣어둔 예시 문장을 끼워 넣기만 합니다.
-   제목 한 조각과 본문 다섯째 줄만 상태에 따라 달라집니다. */
-const DRAFT_TEXT = {
-  "강의안 회신 대기": { subject: "강의안 관련 안내", body: "보내주시기로 한 강의안을 아직 받지 못하여 다시 안내드립니다." },
-  "섭외 회신 대기":   { subject: "강의 요청 관련 안내", body: "지난번 말씀드린 강의 요청에 대한 회신을 기다리고 있습니다." },
-  "일정 조율 중":     { subject: "일정 관련 안내",     body: "말씀 주신 날짜 가운데 하루로 일정을 확정하고자 다시 연락드립니다." },
-  "확정":             { subject: "진행 관련 안내",     body: "당일 준비물과 진행 방식을 미리 안내드립니다." },
-  "종료":             { subject: "마무리 안내",        body: "이번 기수는 마무리되었지만 다음 기수에 다시 모시고 싶어 연락드립니다." }
-};
-
 const $ = (id) => document.getElementById(id);
-let picked  = null;  /* 지금 고른 강사님. 아무도 안 골랐으면 null */
-let writing = null;  /* 초안을 쓰는 척하는 동안 재는 시간 */
+let picked = null;   /* 지금 고른 강사님. 아무도 안 골랐으면 null */
 
 /* 글자를 그대로 화면에 넣기 위한 처리 */
 function esc(s) {
@@ -909,30 +923,36 @@ function drawThread(p) {
   }).join("");
 }
 
-/* 답장 초안: 머리말 2줄 + 본문 6줄, 모두 여덟 줄로 늘 같습니다 */
-function drawDraft(p) {
-  const code  = p.module.split(" ")[0];                       /* M4 같은 모듈 번호 */
-  const where = (p.place === "온라인") ? "온라인으로 진행하는" : (p.place + "에서 진행하는");
-  const day   = p.when.replace(/ \d{2}:\d{2}~\d{2}:\d{2}$/, "");   /* 시간을 뺀 날짜만 */
-  const t     = DRAFT_TEXT[p.status];
-
-  const lines = [
-    "받는 사람: " + p.name + " (" + p.email + ")",
-    "제목: [데이터 실무 과정] " + code + " " + t.subject,
-    "안녕하세요, " + p.name + " 강사님. 교육운영 담당자입니다.",
-    day + " " + where + " " + code + " 모듈 관련하여 안내드립니다.",
-    t.body,
-    "9월 10일까지 회신 주시면 감사하겠습니다.",
-    "일정이나 내용 조정이 필요하시면 편히 말씀해 주세요.",
-    "감사합니다."
-  ];
-
+/* 기다리는 동안: 앞에서 만든 점 세 개를 그대로 씁니다.
+   이번에는 답이 올 때까지 계속 보입니다 */
+function drawWaiting() {
   $("draftBox").innerHTML =
     '<div class="draft liquid-glass">' +
-      '<p class="draft-tag">답장 초안 · 미리 넣어둔 예시 문장입니다</p>' +
-      lines.map(function (line, i) {
-        return '<p class="b-line" style="--i:' + i + '">' + esc(line) + '</p>';
-      }).join("") +
+      '<p class="draft-tag">답장 초안 · 쓰는 중입니다</p>' +
+      '<div class="typing"><i></i><i></i><i></i></div>' +
+    '</div>';
+}
+
+/* 다 되면: 그대로 복사해 갈 수 있는 칸으로 보여줍니다.
+   말풍선은 건드리지 않고 그 아래에 붙습니다 */
+function drawDraft(text) {
+  const lines = text.split("\n").length;
+  $("draftBox").innerHTML =
+    '<div class="draft liquid-glass">' +
+      '<p class="draft-tag">답장 초안 · 칸을 누르면 전체가 잡힙니다</p>' +
+      '<textarea class="draft-copy" readonly rows="' + lines + '"></textarea>' +
+    '</div>';
+  /* 글자는 값으로 넣습니다. 태그로 읽힐 일이 없습니다 */
+  const box = $("draftBox").querySelector(".draft-copy");
+  box.value = text;
+  box.addEventListener("focus", function () { box.select(); });
+}
+
+/* 잘 안 되면: 무엇이 잘못됐는지 한 줄로 */
+function drawError(why) {
+  $("draftBox").innerHTML =
+    '<div class="draft liquid-glass">' +
+      '<p class="draft-error">초안을 받지 못했습니다 — ' + esc(why) + '</p>' +
     '</div>';
 }
 
@@ -946,7 +966,6 @@ function pick(i) {
 
   $("empty").hidden = true;
   $("threadWrap").hidden = false;
-  clearTimeout(writing);
   $("draftBtn").classList.remove("busy");
   $("draftBox").innerHTML = "";
   drawThread(picked);
@@ -968,24 +987,42 @@ $("people").addEventListener("keydown", function (e) {
 });
 
 /* 버튼은 하나뿐입니다. 다시 눌러도 초안 하나가 새로 바뀔 뿐 쌓이지 않습니다.
-   누르면 점 세 개가 잠깐 뛰다가 초안이 올라옵니다. 쓰는 척하는 것뿐이고,
-   나오는 문장은 미리 넣어둔 예시 그대로입니다. */
-$("draftBtn").addEventListener("click", function () {
+   누르면 서버(/api/draft)에 말풍선을 통째로 보내고, 서버가 Gemini를 부릅니다.
+   열쇠는 서버에만 있어 이 화면 소스에는 나오지 않습니다. */
+$("draftBtn").addEventListener("click", async function () {
   if (!picked) return;
   const who = picked;
 
-  clearTimeout(writing);
   $("draftBtn").classList.add("busy");
-  $("draftBox").innerHTML =
-    '<div class="draft liquid-glass">' +
-      '<p class="draft-tag">답장 초안 · 쓰는 중입니다</p>' +
-      '<div class="typing"><i></i><i></i><i></i></div>' +
-    '</div>';
+  drawWaiting();                      /* 답이 올 때까지 점 세 개가 계속 뜁니다 */
 
-  writing = setTimeout(function () {
-    $("draftBtn").classList.remove("busy");
-    if (picked === who) drawDraft(who);   /* 그 사이 다른 분을 골랐으면 그만둡니다 */
-  }, 700);
+  try {
+    const r = await fetch("/api/draft", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name:   who.name,
+        module: who.module,
+        when:   who.when,
+        place:  who.place,
+        status: who.status,
+        mails:  THREADS[who.name] || []
+      })
+    });
+
+    const data = await r.json().catch(function () { return {}; });
+    if (picked !== who) return;       /* 그 사이 다른 분을 골랐으면 그만둡니다 */
+
+    if (!r.ok || !data.draft) {
+      drawError(data.error || ("서버가 " + r.status + "로 답했습니다."));
+    } else {
+      drawDraft(data.draft);
+    }
+  } catch (e) {
+    if (picked === who) drawError("서버에 닿지 못했습니다 (" + (e.message || e) + ")");
+  } finally {
+    if (picked === who) $("draftBtn").classList.remove("busy");
+  }
 });
 </script>
 </body>
