@@ -244,5 +244,8 @@ elif st.session_state.screen == 3:
 else:
     screen_1()
 
+# 화면 맨 아래 · 저작권 한 줄 (세 화면 모두)
+st.caption("© 2026 실습 게시판 · 최유라")
+
 # 오른쪽 아래 상담 챗봇 · 세 화면 어디서나 보인다
 show_chatbot(env.get("ANTHROPIC_API_KEY", ""), env.get("SUPABASE_URL", ""), SUPABASE_ANON_KEY)
