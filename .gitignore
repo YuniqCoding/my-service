@@ -1,0 +1,22 @@
+# 열쇠 · Supabase · Claude · Gemini 키가 들어 있다
+.env
+.env.*
+
+# 파이썬이 실행할 때 저절로 만드는 파일 · 지워도 다시 생긴다
+__pycache__/
+*.pyc
+
+# 내 컴퓨터에서만 쓰는 Claude Code 설정
+.claude/settings.local.json
+
+# streamlit 비밀 값을 넣는 파일 (지금은 없지만 생기면 빼 둔다)
+.streamlit/secrets.toml
+
+# 파이썬 가상 환경 (지금은 없지만 생기면 빼 둔다)
+.venv/
+venv/
+
+# 윈도우 · 맥이 저절로 만드는 파일
+Thumbs.db
+desktop.ini
+.DS_Store
