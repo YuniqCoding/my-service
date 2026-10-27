@@ -32,6 +32,10 @@ LOG_TABLE = "chat_logs"
 LOG_LIMIT = 20
 # 지난 대화의 시각은 한국 시간으로 보여 준다
 KST = timezone(timedelta(hours=9))
+# 답 점검 · 이 글자로 시작하는 답은 줄 수 · 글자 수를 보지 않고 통과시킨다
+UNSURE_PREFIX = "[확실하지 않은 내용이에요]"
+# 답 점검 · 답이 넘으면 안 되는 글자 수 (줄바꿈은 세지 않는다)
+ANSWER_MAX_CHARS = 300
 
 
 @st.cache_resource
@@ -171,6 +175,22 @@ def answer_text(response):
     return "".join(block.text for block in response.content if block.type == "text")
 
 
+def answer_ok(answer):
+    """보여 주기 전 점검 · 빈 줄 없이 정확히 세 줄이고 300자 이하면 통과한다.
+
+    "[확실하지 않은 내용이에요]" 로 시작하는 답은 줄 수 · 글자 수를 보지 않고 통과시킨다.
+    """
+    answer = answer.strip()
+    if answer.startswith(UNSURE_PREFIX):
+        return True
+    lines = answer.splitlines()
+    return (
+        len(lines) == 3
+        and all(line.strip() for line in lines)
+        and len("".join(lines)) <= ANSWER_MAX_CHARS
+    )
+
+
 def usage_line(usage):
     """토큰 수를 한 줄 글로 바꾼다. 저장해 둔 앞부분을 다시 읽은 토큰은 따로 적는다."""
     cached = (usage.cache_read_input_tokens or 0) + (usage.cache_creation_input_tokens or 0)
@@ -257,6 +277,9 @@ def send_question(api_key, supabase, tone, question, history):
             try:
                 with st.spinner("답을 기다리는 중입니다"):
                     response = ask_claude(api_key, st.session_state.chatbot_system, new_history)
+                    # 점검에 걸리면 같은 말로 한 번 더 묻는다
+                    if response.stop_reason != "refusal" and not answer_ok(answer_text(response)):
+                        response = ask_claude(api_key, st.session_state.chatbot_system, new_history)
             except anthropic.RateLimitError:
                 st.error("답을 받지 못했습니다 · 요청이 너무 많습니다. 잠시 뒤에 다시 보내 주세요")
                 return
@@ -271,7 +294,11 @@ def send_question(api_key, supabase, tone, question, history):
                 st.error("이 말에는 답할 수 없습니다. 다르게 물어봐 주세요")
                 return
             answer = answer_text(response) or "(받은 답에 글자가 없습니다)"
-            st.caption("AI가 쓴 초안입니다")
+            # 두 번 다 점검에 걸렸을 때 · 답은 보여 주지 않고, 이 말은 대화에 남기지 않는다
+            if not answer_ok(answer):
+                st.error("다시 시도해 주세요")
+                return
+            st.caption("AI가 쓴 초안입니다 · 확인하고 쓰세요")
             st.write(as_lines(answer))
             st.caption(usage_line(response.usage))
             # 표에 못 남겨도 대화는 이어 간다
@@ -315,7 +342,7 @@ def chat_window(api_key, supabase):
                 with st.chat_message(message["role"], avatar=avatar):
                     # AI의 답 위에는 안내 한 줄을 붙인다
                     if message["role"] == "assistant":
-                        st.caption("AI가 쓴 초안입니다")
+                        st.caption("AI가 쓴 초안입니다 · 확인하고 쓰세요")
                     st.write(as_lines(message["text"]))
                     if message.get("usage") is not None:
                         st.caption(usage_line(message["usage"]))
