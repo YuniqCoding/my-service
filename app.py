@@ -6,6 +6,7 @@ import streamlit as st
 
 from chatbot import show_chatbot
 from landing import back_to_landing, show_landing
+from theme import apply_theme
 
 # 이 파일과 같은 폴더의 .env 에서 Supabase 주소와 키를 찾는다
 ENV_PATH = Path(__file__).parent / ".env"
@@ -16,6 +17,9 @@ st.set_page_config(page_title="실습 게시판", page_icon="❤️")
 if not st.session_state.get("started"):
     show_landing()
     st.stop()
+
+# 기능 화면 꾸밈 · 글자와 기능은 그대로 두고 색과 배치만 바꾼다
+apply_theme()
 
 
 def load_env():
