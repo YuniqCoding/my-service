@@ -191,47 +191,57 @@ def screen_3():
 
     st.title(f"「실습 {st.session_state.practice}」 결과물 게시판")
 
-    # 넣는 자리 · 사진은 한 번에 1장
-    st.text_input("이름", key="name")
-    st.file_uploader(
-        "사진 (파일 선택)",
-        type=["png", "jpg", "jpeg", "gif", "webp"],
-        key=f"photo_{st.session_state.photo_round}",
-    )
-    st.text_input("한 줄 설명", key="comment")
+    # 넣는 자리는 왼쪽 사이드바에 두고, 가운데는 갤러리가 다 쓴다
+    with st.sidebar:
+        # 넣는 자리 · 사진은 한 번에 1장
+        st.text_input("이름", key="name")
+        st.file_uploader(
+            "사진 (파일 선택)",
+            type=["png", "jpg", "jpeg", "gif", "webp"],
+            key=f"photo_{st.session_state.photo_round}",
+        )
+        st.text_input("한 줄 설명", key="comment")
 
-    # 안내 자리 · 사진 없이 누르면 보인다
-    if st.session_state.notice:
-        st.error(st.session_state.notice)
+        # 안내 자리 · 사진 없이 누르면 보인다
+        if st.session_state.notice:
+            st.error(st.session_state.notice)
 
-    # 단추 · 사진이 있으면 아래 갤러리에 카드가 한 장 쌓인다
-    st.button("올리기", on_click=upload)
+        # 단추 · 사진이 있으면 가운데 갤러리에 카드가 한 장 쌓인다
+        st.button("올리기", on_click=upload)
 
     # 갤러리 · 이 실습에 올라온 결과물을 카드로 보여 준다
     cards = cards_of(st.session_state.practice)
 
-    # 단추 · 지금 갤러리에 보이는 결과물을 파일 하나로 내려받는다
-    if cards:
-        st.download_button(
-            "결과물 내려받기",
-            data=cards_to_csv(st.session_state.practice, cards),
-            file_name=f"실습{st.session_state.practice}_결과물.csv",
-            mime="text/csv",
-        )
+    # 자주 보는 갤러리는 첫 탭, 가끔 쓰는 내려받기는 둘째 탭
+    gallery_tab, download_tab = st.tabs(["결과물 모아 보기", "내려받기"])
 
-    with st.container(border=True):
-        if not cards:
+    with gallery_tab:
+        with st.container(border=True):
+            if not cards:
+                st.caption("빈 게시판")
+            per_row = 4  # 한 줄에 네 장씩 놓아 한 화면에 더 많이 보이게 한다
+            columns = st.columns(per_row)
+            for index, card in enumerate(cards):
+                with columns[index % per_row]:
+                    with st.container(border=True):
+                        # 사진은 이번에 화면에서 올린 카드에만 있다
+                        if card["사진"]:
+                            st.image(card["사진"])
+                        # 이름과 한 줄 설명은 비어 있으면 건너뛴다
+                        words = [word.strip() for word in (card["이름"], card["한 줄 설명"]) if word.strip()]
+                        st.text(" · ".join(words))
+
+    # 단추 · 지금 갤러리에 보이는 결과물을 파일 하나로 내려받는다
+    with download_tab:
+        if cards:
+            st.download_button(
+                "결과물 내려받기",
+                data=cards_to_csv(st.session_state.practice, cards),
+                file_name=f"실습{st.session_state.practice}_결과물.csv",
+                mime="text/csv",
+            )
+        else:
             st.caption("빈 게시판")
-        columns = st.columns(2)
-        for index, card in enumerate(cards):
-            with columns[index % 2]:
-                with st.container(border=True):
-                    # 사진은 이번에 화면에서 올린 카드에만 있다
-                    if card["사진"]:
-                        st.image(card["사진"])
-                    # 이름과 한 줄 설명은 비어 있으면 건너뛴다
-                    words = [word.strip() for word in (card["이름"], card["한 줄 설명"]) if word.strip()]
-                    st.text(" · ".join(words))
 
 
 # 왼쪽 사이드바 · 서비스 설명 한 줄
