@@ -5,11 +5,17 @@ import requests
 import streamlit as st
 
 from chatbot import show_chatbot
+from landing import back_to_landing, show_landing
 
 # 이 파일과 같은 폴더의 .env 에서 Supabase 주소와 키를 찾는다
 ENV_PATH = Path(__file__).parent / ".env"
 
-st.set_page_config(page_title="실습 결과물 게시판 만들기")
+st.set_page_config(page_title="실습 게시판", page_icon="❤️")
+
+# 처음 열면 첫 화면(랜딩)부터 보여 주고, [시작하기]를 누르기 전에는 아래 기능 화면을 그리지 않는다
+if not st.session_state.get("started"):
+    show_landing()
+    st.stop()
 
 
 def load_env():
@@ -246,6 +252,8 @@ def screen_3():
 
 # 왼쪽 사이드바 · 서비스 설명 한 줄
 st.sidebar.write("실습 번호만 넣으면 실습마다 결과물 게시판이 한 번에 생깁니다.")
+# 단추 · 첫 화면(랜딩)으로 돌아간다 · 세 화면 모두
+st.sidebar.button("← 첫 화면으로", key="back_to_landing", on_click=back_to_landing)
 
 if st.session_state.screen == 2:
     screen_2()
