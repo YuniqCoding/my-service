@@ -1,6 +1,8 @@
 # 열쇠 · Supabase · Claude · Gemini 키가 들어 있다
 .env
 .env.*
+# 키 이름만 있고 값은 빈 본보기 · 이것만 올린다
+!.env.example
 
 # 파이썬이 실행할 때 저절로 만드는 파일 · 지워도 다시 생긴다
 __pycache__/
