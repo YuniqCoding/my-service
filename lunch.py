@@ -3,7 +3,6 @@
 기준 장소(역 · 동네 이름)를 카카오에서 찾아 그 좌표를 중심으로 삼고, 고른 반경 안에서 고른 음식을 찾는다.
 카카오는 [검색] 을 눌렀을 때만 부른다. 받은 결과는 화면에 남겨 두고, 걸러 보기 · 정렬은 그 결과만으로 한다.
 """
-from pathlib import Path
 from urllib.parse import quote
 
 import altair as alt
@@ -11,8 +10,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-# 이 파일과 같은 폴더의 .env 에서 카카오 키를 찾는다
-ENV_PATH = Path(__file__).parent / ".env"
+from env_keys import load_env
 
 # 카카오 로컬 API 주소 · 카카오 공식 문서(developers.kakao.com/docs/ko/local/dev-guide) 기준
 KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json"
@@ -41,20 +39,6 @@ SORTS = {
 }
 
 st.set_page_config(page_title="근처 맛집 대시보드", layout="wide")
-
-
-def load_env():
-    """.env 를 읽어 「이름=값」 줄만 모은다."""
-    values = {}
-    if not ENV_PATH.is_file():
-        return values
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip()
-    return values
 
 
 KAKAO_KEY = load_env().get("KAKAO_REST_API_KEY", "")

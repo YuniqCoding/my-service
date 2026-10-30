@@ -1,15 +1,11 @@
-from pathlib import Path
-
 import pandas as pd
 import requests
 import streamlit as st
 
 from chatbot import show_chatbot
+from env_keys import load_env
 from landing import back_to_landing, show_landing
 from theme import apply_theme
-
-# 이 파일과 같은 폴더의 .env 에서 Supabase 주소와 키를 찾는다
-ENV_PATH = Path(__file__).parent / ".env"
 
 st.set_page_config(page_title="실습 게시판", page_icon="❤️")
 
@@ -20,20 +16,6 @@ if not st.session_state.get("started"):
 
 # 기능 화면 꾸밈 · 글자와 기능은 그대로 두고 색과 배치만 바꾼다
 apply_theme()
-
-
-def load_env():
-    """.env 를 읽어 「이름=값」 줄만 모은다."""
-    values = {}
-    if not ENV_PATH.is_file():
-        return values
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip()
-    return values
 
 
 env = load_env()

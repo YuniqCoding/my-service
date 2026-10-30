@@ -4,32 +4,19 @@
 표는 02_output/subscriptions.sql 로 만든다.
 """
 from datetime import date, timedelta
-from pathlib import Path
 
 import pandas as pd
 import requests
 import streamlit as st
 
-# 이 파일과 같은 폴더의 .env 에서 Supabase 주소와 키를 찾는다
-ENV_PATH = Path(__file__).parent / ".env"
+from env_keys import load_env
+
 # 표에서 쓰는 칸 · id 는 Supabase 가 붙이는 번호라 고치지 않는다
 COLUMNS = ["id", "name", "category", "monthly_fee", "last_used"]
 # 이 날수보다 오래 안 쓴 구독을 「안 쓰는 구독」 으로 센다
 IDLE_DAYS = 30
 
 st.set_page_config(page_title="구독 정리함", layout="wide")
-
-
-def load_env():
-    """.env 를 읽어 「이름=값」 줄만 모은다."""
-    values = {}
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip()
-    return values
 
 
 env = load_env()

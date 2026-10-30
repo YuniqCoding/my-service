@@ -1,29 +1,13 @@
-from pathlib import Path
-
 import requests
 import streamlit as st
 
-# 이 파일과 같은 폴더의 .env 에서 Gemini 키를 찾는다
-ENV_PATH = Path(__file__).parent / ".env"
+from env_keys import load_env
+
 # Gemini 공식 문서(ai.google.dev/gemini-api/docs/text-generation · interactions)의 주소와 모델 이름
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"
 GEMINI_MODEL = "gemini-3.8-flash"
 
 st.set_page_config(page_title="챗봇")
-
-
-def load_env():
-    """.env 를 읽어 「이름=값」 줄만 모은다."""
-    values = {}
-    if not ENV_PATH.is_file():
-        return values
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip()
-    return values
 
 
 def ask_gemini(api_key, question):

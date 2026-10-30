@@ -9,8 +9,8 @@ from uuid import uuid4
 import requests
 import streamlit as st
 
-# 이 파일과 같은 폴더의 .env 에서 Supabase 주소와 키를 찾는다
-ENV_PATH = Path(__file__).parent / ".env"
+from env_keys import load_env
+
 # 그림을 올리는 버킷 이름
 BUCKET = "photos"
 # 올릴 수 있는 그림 종류
@@ -23,18 +23,6 @@ KST = timezone(timedelta(hours=9))
 
 # 가운데 좁은 화면 · 세 칸이 작게 붙어 나란히 보인다
 st.set_page_config(page_title="사진 보관함")
-
-
-def load_env():
-    """.env 를 읽어 「이름=값」 줄만 모은다."""
-    values = {}
-    for line in ENV_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        name, value = line.split("=", 1)
-        values[name.strip()] = value.strip()
-    return values
 
 
 env = load_env()

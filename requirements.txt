@@ -1,6 +1,12 @@
+# 모든 화면의 제목 · 입력 칸 · 단추 · 표를 그린다
 streamlit
+# 결과물을 CSV 로 내보내고(app.py), 표 자료를 읽고 다듬는다(lunch.py · practice_table.py · subs.py)
 pandas
+# Supabase 저장소와 카카오(lunch.py) · Gemini(helper.py) 에 요청을 보낸다
 requests
+# 상담 챗봇이 Claude 에 질문을 보내고 답을 받는다(chatbot.py)
 anthropic
+# 점심 가게 수를 막대그래프로 그린다(lunch.py)
 altair
+# 챗봇 얼굴 그림 bot.png 를 160px 로 줄인다(chatbot.py)
 Pillow
