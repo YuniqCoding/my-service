@@ -146,7 +146,6 @@ def cards_to_csv(number, cards):
 def screen_1():
     """화면 1 · 넣는 화면"""
     st.title("실습 결과물 게시판 만들기")
-    st.caption("실습 번호만 넣으면 실습마다 결과물 게시판이 한 번에 생깁니다.")
 
     # 넣는 자리 · 칸 이름은 칸 안에 흐리게 보인다
     st.text_input("실습 번호 (예: 3)", placeholder="실습 번호 (예: 3)", label_visibility="collapsed", key="number")
