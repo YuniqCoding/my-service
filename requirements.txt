@@ -10,3 +10,5 @@ anthropic
 altair
 # 챗봇 얼굴 그림 bot.png 를 160px 로 줄인다(chatbot.py)
 Pillow
+# 구글 로그인(st.login)이 구글과 주고받을 때 쓴다
+Authlib
