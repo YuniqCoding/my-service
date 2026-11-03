@@ -17,6 +17,12 @@ if not st.session_state.get("started"):
 # 기능 화면 꾸밈 · 글자와 기능은 그대로 두고 색과 배치만 바꾼다
 apply_theme()
 
+# [시작하기] 뒤에는 구글 계정으로 들어와야 기능 화면이 보인다 · 키는 .streamlit/secrets.toml 의 [auth.google]
+if not st.user.is_logged_in:
+    st.title("구글 계정으로 들어오기")
+    st.button("구글 계정으로 들어오기", on_click=st.login, args=("google",))
+    st.stop()
+
 
 env = load_env()
 SUPABASE_ANON_KEY = env.get("SUPABASE_ANON_KEY", "")
@@ -142,9 +148,10 @@ def cards_of(number):
         card["id"]: card for card in st.session_state.uploads.get(number, []) if card["이름"] == owner
     }
     cards = [
-        uploads.pop(row["id"], None) or {"이름": row["owner"] or "", "사진": "", "한 줄 설명": row["comment"] or ""}
+        uploads.pop(row["id"], None) or {"이름": owner, "사진": "", "한 줄 설명": row["comment"] or ""}
         for row in saved
-        if row["practice_no"] == number and row.get("owner") == owner
+        # 표에 앞뒤 빈칸이 붙어 들어간 owner 도 같은 이름으로 본다
+        if row["practice_no"] == number and (row.get("owner") or "").strip() == owner
     ]
     return cards + list(uploads.values())
 
@@ -267,6 +274,9 @@ def screen_3():
 st.sidebar.write("실습 번호만 넣으면 실습마다 결과물 게시판이 한 번에 생깁니다.")
 # 단추 · 첫 화면(랜딩)으로 돌아간다 · 세 화면 모두
 st.sidebar.button("← 첫 화면으로", key="back_to_landing", on_click=back_to_landing)
+
+# 화면 맨 위 · 구글 계정으로 들어온 사람의 이름 (세 화면 모두)
+st.caption(f"{st.user.get('name') or st.user.get('email', '')} 님")
 
 if st.session_state.screen == 2:
     screen_2()
