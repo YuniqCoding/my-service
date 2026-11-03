@@ -251,6 +251,8 @@ else:
 
 # 화면 맨 아래 · 저작권 한 줄 (세 화면 모두)
 st.caption("© 2026 실습 게시판 · 최유라")
+# 화면 맨 아래 · 마지막으로 고친 날 한 줄 (세 화면 모두)
+st.caption("마지막으로 고친 날 2026-11-03 · 기능 화면 안내 글을 넣음")
 
 # 오른쪽 아래 상담 챗봇 · 세 화면 어디서나 보인다
 show_chatbot(env.get("ANTHROPIC_API_KEY", ""), env.get("SUPABASE_URL", ""), SUPABASE_ANON_KEY)
