@@ -146,6 +146,7 @@ def cards_to_csv(number, cards):
 def screen_1():
     """화면 1 · 넣는 화면"""
     st.title("실습 결과물 게시판 만들기")
+    st.caption("실습 번호만 넣으면 실습마다 결과물 게시판이 한 번에 생깁니다.")
 
     # 넣는 자리 · 칸 이름은 칸 안에 흐리게 보인다
     st.text_input("실습 번호 (예: 3)", placeholder="실습 번호 (예: 3)", label_visibility="collapsed", key="number")
@@ -250,6 +251,8 @@ else:
 
 # 화면 맨 아래 · 저작권 한 줄 (세 화면 모두)
 st.caption("© 2026 실습 게시판 · 최유라")
+# 화면 맨 아래 · 마지막으로 고친 날과 고친 것
+st.caption("마지막으로 고친 날 2026-11-03 · 첫 화면 안내 글을 넣음")
 
 # 오른쪽 아래 상담 챗봇 · 세 화면 어디서나 보인다
 show_chatbot(env.get("ANTHROPIC_API_KEY", ""), env.get("SUPABASE_URL", ""), SUPABASE_ANON_KEY)
