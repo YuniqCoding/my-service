@@ -27,6 +27,8 @@ STYLE = f"""
 <style>
 .stApp {{ background: {BACKGROUND}; }}
 [data-testid="stHeader"] {{ background: transparent; }}
+/* [시작하기] 뒤 기능 화면이 다 그려질 때까지 남아 있는 첫 화면 영상 · 글자 · 단추를 숨긴다 */
+[data-stale="true"]:has(.hero-video, .landing), .st-key-start[data-stale="true"] {{ display: none; }}
 
 /* 무대 · 가운데 하얀 판 한 장 */
 {MAIN} {{
