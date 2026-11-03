@@ -12,7 +12,7 @@ st.set_page_config(page_title="실습 게시판", page_icon="❤️")
 # 구글 계정으로 들어와야 화면이 보인다 · 들어온 사람의 이름을 맨 위에 보여 준다
 if not st.user.is_logged_in:
     st.title("실습 게시판")
-    st.button("구글 계정으로 들어가기", on_click=st.login)
+    st.button("구글 계정으로 들어가기", on_click=st.login, args=("google",))
     st.stop()
 st.caption(f"{st.user.name} 님")
 
