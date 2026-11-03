@@ -9,13 +9,6 @@ from theme import apply_theme
 
 st.set_page_config(page_title="실습 게시판", page_icon="❤️")
 
-# 구글 계정으로 들어와야 화면이 보인다 · 들어온 사람의 이름을 맨 위에 보여 준다
-if not st.user.is_logged_in:
-    st.title("실습 게시판")
-    st.button("구글 계정으로 들어가기", on_click=st.login)
-    st.stop()
-st.caption(f"{st.user.name} 님")
-
 # 처음 열면 첫 화면(랜딩)부터 보여 주고, [시작하기]를 누르기 전에는 아래 기능 화면을 그리지 않는다
 if not st.session_state.get("started"):
     show_landing()
