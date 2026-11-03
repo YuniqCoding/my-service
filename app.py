@@ -23,6 +23,8 @@ SUPABASE_ANON_KEY = env.get("SUPABASE_ANON_KEY", "")
 # submissions 표의 주소와, 요청마다 같이 보내는 키
 TABLE_URL = f"{env.get('SUPABASE_URL', '').rstrip('/')}/rest/v1/submissions"
 HEADERS = {"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {SUPABASE_ANON_KEY}"}
+# 이름 없이 올리거나 모아 보려 할 때 띄우는 안내
+NAME_NOTICE = "이름을 넣어 주세요"
 
 
 def load_saved():
@@ -31,7 +33,7 @@ def load_saved():
         response = requests.get(
             TABLE_URL,
             headers=HEADERS,
-            params={"select": "id,practice_no,comment", "order": "id.asc"},
+            params={"select": "id,practice_no,comment,owner", "order": "id.asc"},
             timeout=10,
         )
         response.raise_for_status()
@@ -87,12 +89,21 @@ def upload():
     if photo is None:
         st.session_state.notice = "사진을 1장 올려 주세요"
         return
-    # submissions 표에 실습 번호와 한 줄 설명을 한 줄 쌓는다 · 사진과 이름은 표에 넣지 않는다
+    # 이름이 비어 있으면 올리지 않는다 · 이름은 owner 칸에 같이 적는다
+    owner = current_owner()
+    if not owner:
+        st.session_state.notice = NAME_NOTICE
+        return
+    # submissions 표에 실습 번호 · 한 줄 설명 · 이름(owner)을 한 줄 쌓는다 · 사진은 표에 넣지 않는다
     try:
         response = requests.post(
             TABLE_URL,
             headers={**HEADERS, "Prefer": "return=representation"},
-            json={"practice_no": st.session_state.practice, "comment": st.session_state.comment.strip() or None},
+            json={
+                "practice_no": st.session_state.practice,
+                "comment": st.session_state.comment.strip() or None,
+                "owner": owner,
+            },
             timeout=10,
         )
         response.raise_for_status()
@@ -103,27 +114,37 @@ def upload():
     st.session_state.uploads.setdefault(st.session_state.practice, []).append(
         {
             "id": saved_id,
-            "이름": st.session_state.name,
+            "이름": owner,
             "사진": photo.getvalue(),
             "파일 이름": photo.name,
             "한 줄 설명": st.session_state.comment,
         }
     )
-    # 올린 뒤에는 칸과 안내 문구를 비운다
+    # 올린 뒤에는 칸과 안내 문구를 비운다 · 이름은 목록을 거르는 데 쓰므로 남겨 둔다
     st.session_state.notice = ""
-    st.session_state.name = ""
     st.session_state.comment = ""
     st.session_state.photo_round += 1
 
 
+def current_owner():
+    """화면 3 「이름」 칸에 넣은 이름. 칸이 없거나 비어 있으면 빈 글자."""
+    return (st.session_state.get("name") or "").strip()
+
+
 def cards_of(number):
-    """그 실습의 결과물 카드를 submissions 표에 쌓인 차례대로 모은다."""
-    # 이번에 화면에서 올린 것은 사진과 이름까지, 그 전에 올린 것은 표에 남은 한 줄 설명만 보인다
-    uploads = {card["id"]: card for card in st.session_state.uploads.get(number, [])}
+    """그 실습의 결과물 가운데 owner 가 지금 넣은 이름과 같은 카드만, submissions 표에 쌓인 차례대로 모은다."""
+    owner = current_owner()
+    # 이름이 비어 있으면 아무것도 보여 주지 않는다
+    if not owner:
+        return []
+    # 이번에 화면에서 올린 것은 사진과 이름까지, 그 전에 올린 것은 표에 남은 이름과 한 줄 설명만 보인다
+    uploads = {
+        card["id"]: card for card in st.session_state.uploads.get(number, []) if card["이름"] == owner
+    }
     cards = [
-        uploads.pop(row["id"], None) or {"이름": "", "사진": "", "한 줄 설명": row["comment"] or ""}
+        uploads.pop(row["id"], None) or {"이름": row["owner"] or "", "사진": "", "한 줄 설명": row["comment"] or ""}
         for row in saved
-        if row["practice_no"] == number
+        if row["practice_no"] == number and row.get("owner") == owner
     ]
     return cards + list(uploads.values())
 
@@ -210,7 +231,10 @@ def screen_3():
 
     with gallery_tab:
         with st.container(border=True):
-            if not cards:
+            # 이름이 비어 있으면 목록 대신 이름을 넣으라는 안내를 띄운다
+            if not current_owner():
+                st.error(NAME_NOTICE)
+            elif not cards:
                 st.caption("빈 게시판")
             per_row = 4  # 한 줄에 네 장씩 놓아 한 화면에 더 많이 보이게 한다
             columns = st.columns(per_row)
@@ -226,7 +250,9 @@ def screen_3():
 
     # 단추 · 지금 갤러리에 보이는 결과물을 파일 하나로 내려받는다
     with download_tab:
-        if cards:
+        if not current_owner():
+            st.error(NAME_NOTICE)
+        elif cards:
             st.download_button(
                 "결과물 내려받기",
                 data=cards_to_csv(st.session_state.practice, cards),
