@@ -10,6 +10,8 @@ ACCENT = "#fccd0f"
 
 # 히어로 배경 영상 · app.py 와 같은 폴더
 HERO_VIDEO = Path(__file__).parent / "hero.mp4"
+# 온보딩 안내 영상 · 처음 온 사람이 첫 화면 맨 위에서 눌러 보는 사용법 영상
+ONBOARDING_VIDEO = Path(__file__).parent / "onboarding.mp4"
 
 # 하는 일 세 가지 · PRD.md 「3. 범위 → 넣을 기능」 그대로
 FEATURES = [
@@ -28,6 +30,10 @@ STYLE = f"""
 .hero-video {{ position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -1; }}
 .landing {{ color: {TEXT}; text-align: center; text-shadow: 0 2px 12px rgba(0, 0, 0, 0.35); }}
 .landing.hero {{ padding-top: 22vh; }}
+/* 온보딩 영상이 맨 위에 있으면 제목을 덜 내려서 [시작하기]가 첫 화면 안에 보이게 한다 */
+[data-testid="stMain"]:has(.st-key-onboarding) .landing.hero {{ padding-top: 4vh; }}
+.st-key-onboarding {{ margin-top: 4vh; }}
+.st-key-onboarding video {{ border-radius: 16px; border: 4px solid {ACCENT}; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); }}
 .landing h1 {{ color: {TEXT}; font-size: 3.6rem; margin-bottom: 0.4rem; }}
 .landing .intro {{ font-size: 1.3rem; font-weight: 600; margin-bottom: 1.5rem; }}
 .landing.below {{ text-shadow: none; padding-top: 22vh; }}
@@ -72,6 +78,11 @@ def show_landing():
         f'<div class="feature"><b>{number}</b>{text}</div>' for number, text in enumerate(FEATURES, start=1)
     )
     st.markdown(STYLE, unsafe_allow_html=True)
+
+    # 온보딩 안내 · 맨 위에 재생 단추가 있는 사용법 영상 · 파일이 없으면 넣지 않는다
+    if ONBOARDING_VIDEO.is_file():
+        with st.container(key="onboarding"):
+            st.video(str(ONBOARDING_VIDEO))
 
     # 히어로 · 소리 없이(muted) 자동 재생(autoplay) · 끝나면 처음부터(loop)
     src = hero_video_src()
